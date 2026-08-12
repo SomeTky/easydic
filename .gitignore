@@ -1,0 +1,110 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Production builds
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.sample
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage directory
+coverage/
+.nyc_output/
+
+# Test output
+test-results/
+test-report.xml
+jest-output.json
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+
+# Database files
+*.sqlite
+*.db
+*.db-journal
+
+# Uploads and static files
+uploads/
+public/uploads/
+media/
+*.pem
+*.key
+*.crt
+
+# CI/CD
+github/
+.gitlab-ci.yml
+.drone.yml
+.travis.yml
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Misc
+*.tgz
+*.gz
+*.zip
+*.rar
+*.tar
+*.7z
+
+# Application specific
+.cache-loader/
+.swc/
+.wmr/
+.nx/
+.turbo/
+
+# Storybook
+storybook-static/
+*.stories.*.js
+*.stories.*.ts
+
+# Generated files
+*.generated.*
+*.auto.*

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>简约词典</title>
+  <style>
+    /* 全局重置 & 字体 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px 12px 40px;
+    }
+
+    /* 主卡片 – 手机优先 */
+    .app-container {
+      max-width: 600px;
+      width: 100%;
+      background: white;
+      border-radius: 28px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.03);
+      padding: 24px 18px 32px;
+      transition: box-shadow 0.2s;
+    }
+
+    /* 标题 */
+    .app-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+    }
+    .app-header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: #0b1b32;
+    }
+    .app-header .hint {
+      font-size: 14px;
+      color: #7e8b9e;
+      font-weight: 400;
+      background: #f0f3f8;
+      padding: 4px 14px;
+      border-radius: 30px;
+    }
+
+    /* 搜索框 */
+    .search-section {
+      margin-bottom: 24px;
+    }
+    .search-wrapper {
+      display: flex;
+      align-items: center;
+      background: #f0f3f8;
+      border-radius: 60px;
+      padding: 4px 4px 4px 20px;
+      transition: background 0.2s, box-shadow 0.2s;
+      border: 1px solid transparent;
+    }
+    .search-wrapper:focus-within {
+      background: white;
+      border-color: #b0c7e7;
+      box-shadow: 0 2px 10px rgba(48, 99, 184, 0.08);
+    }
+    .search-wrapper input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 14px 8px 14px 0;
+      font-size: 17px;
+      outline: none;
+      color: #0b1b32;
+      min-width: 0;
+    }
+    .search-wrapper input::placeholder {
+      color: #9aabbe;
+      font-weight: 400;
+      letter-spacing: -0.2px;
+    }
+    .search-wrapper button {
+      background: #1e3a6f;
+      border: none;
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 60px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap;
+      letter-spacing: 0.3px;
+      box-shadow: 0 2px 6px rgba(27, 55, 112, 0.15);
+    }
+    .search-wrapper button:active {
+      transform: scale(0.96);
+      background: #14305a;
+    }
+    .search-wrapper button:hover {
+      background: #1f3f78;
+    }
+
+    /* 结果区域 – 卡片风格 */
+    .result-area {
+      margin-top: 8px;
+    }
+
+    /* 单词头部 */
+    .word-head {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin-bottom: 10px;
+    }
+    .word-head .word {
+      font-size: 32px;
+      font-weight: 600;
+      color: #0b1b32;
+      letter-spacing: -0.5px;
+    }
+    .word-head .phonetic {
+      font-size: 18px;
+      color: #4a5a72;
+      font-weight: 400;
+      background: #ecf0f5;
+      padding: 2px 14px;
+      border-radius: 40px;
+      letter-spacing: 0.2px;
+    }
+    .word-head .origin {
+      width: 100%;
+      font-size: 14px;
+      color: #6d7e94;
+      margin-top: 2px;
+      line-height: 1.5;
+      background: #f8faff;
+      padding: 8px 14px;
+      border-radius: 16px;
+      border-left: 3px solid #b7cee8;
+    }
+
+    /* 含义区块 */
+    .meaning-block {
+      margin-top: 18px;
+      border-top: 1px solid #e9edf4;
+      padding-top: 18px;
+    }
+    .part-of-speech {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1e3a6f;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .part-of-speech span {
+      background: #dce5f2;
+      padding: 0 12px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a3361;
+      line-height: 26px;
+    }
+
+    .definition-item {
+      background: #fafcff;
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      border: 1px solid #eef3fc;
+      transition: background 0.1s;
+    }
+    .definition-item .def-text {
+      font-size: 17px;
+      line-height: 1.5;
+      color: #132239;
+      margin-bottom: 8px;
+    }
+    .definition-item .example {
+      font-size: 15px;
+      color: #3b5779;
+      background: #f0f5fe;
+      padding: 8px 14px;
+      border-radius: 40px;
+      display: inline-block;
+      margin-top: 4px;
+      font-style: italic;
+      border-left: 3px solid #8dabcf;
+    }
+    .definition-item .example::before {
+      content: "“";
+      opacity: 0.5;
+    }
+    .definition-item .example::after {
+      content: "”";
+      opacity: 0.5;
+    }
+
+    /* 占位 & 空状态 */
+    .placeholder-message {
+      text-align: center;
+      padding: 40px 10px 20px;
+      color: #8d9cb0;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+    }
+    .placeholder-message .emoji-big {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    .not-found {
+      background: #fff6f0;
+      border-radius: 24px;
+      padding: 24px 16px;
+      text-align: center;
+      color: #a05a3a;
+      border: 1px solid #ffe2d0;
+    }
+    .not-found strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px 10px;
+      color: #1e3a6f;
+    }
+    .loading .spinner {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      border: 3px solid #dce5f2;
+      border-top-color: #1e3a6f;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 微小调整 */
+    .no-margin {
+      margin: 0;
+    }
+
+    /* 手机窄屏适配 */
+    @media (max-width: 480px) {
+      .app-container {
+        padding: 18px 12px 28px;
+        border-radius: 24px;
+      }
+      .app-header h1 {
+        font-size: 22px;
+      }
+      .search-wrapper input {
+        font-size: 16px;
+        padding: 12px 4px 12px 0;
+      }
+      .search-wrapper button {
+        font-size: 14px;
+        padding: 8px 14px;
+      }
+      .word-head .word {
+        font-size: 28px;
+      }
+      .word-head .phonetic {
+        font-size: 16px;
+      }
+      .part-of-speech {
+        font-size: 18px;
+      }
+      .definition-item .def-text {
+        font-size: 16px;
+      }
+      .definition-item .example {
+        font-size: 14px;
+        padding: 6px 12px;
+      }
+    }
+
+    /* 动画 */
+    .result-area .meaning-block:first-of-type {
+      animation: fadeSlide 0.2s ease;
+    }
+    @keyframes fadeSlide {
+      0% { opacity: 0.5; transform: translateY(4px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .audio-badge {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 13px;
+      color: #2b5d9e;
+      background: #e4ecf9;
+      padding: 0 10px;
+      border-radius: 30px;
+      line-height: 24px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container" role="main">
+  <header class="app-header">
+    <h1>📖 词典</h1>
+    <span class="hint">简约 · 清晰</span>
+  </header>
+
+  <div class="search-section">
+    <div class="search-wrapper">
+      <input type="text" id="searchInput" placeholder="输入单词, 如 hello" autofocus>
+      <button id="searchBtn">查词</button>
+    </div>
+  </div>
+
+  <div class="result-area" id="resultArea">
+    <!-- 默认显示欢迎占位 -->
+    <div class="placeholder-message" id="placeholder">
+      <span class="emoji-big">🔍</span>
+      输入单词，点击查词
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const resultArea = document.getElementById('resultArea');
+
+    // ----- 核心 API 请求函数 -----
+    async function fetchDictionaryData(word) {
+      const trimmed = word.trim();
+      if (!trimmed) return null;
+
+      const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(trimmed)}`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          // 处理 404 等 HTTP 错误
+          if (response.status === 404) {
+            return { error: 'not_found', word: trimmed };
+          }
+          return { error: 'http_error', status: response.status };
+        }
+        const data = await response.json();
+        // API 返回数组，取第一个结果 (通常一个词对应一个条目)
+        if (Array.isArray(data) && data.length > 0) {
+          return data[0];
+        }
+        return { error: 'no_data' };
+      } catch (err) {
+        // 网络错误或其他
+        return { error: 'network', message: err.message };
+      }
+    }
+
+    // ----- 渲染函数 (基于真实 API 返回结构) -----
+    function renderEntry(entry, queryWord) {
+      // 处理错误状态
+      if (!entry || entry.error) {
+        if (entry?.error === 'not_found') {
+          resultArea.innerHTML = `
+            <div class="not-found">
+              <strong>😕 未找到 “${entry.word || queryWord}”</strong>
+              <span style="font-size: 15px;">请检查拼写，或尝试其他单词</span>
+            </div>
+          `;
+        } else if (entry?.error === 'network') {
+          resultArea.innerHTML = `
+            <div class="not-found">
+              <strong>🌐 网络请求失败</strong>
+              <span style="font-size: 15px;">请检查网络连接后重试</span>
+            </div>
+          `;
+        } else {
+          resultArea.innerHTML = `
+            <div class="not-found">
+              <strong>⚠️ 查询出错</strong>
+              <span style="font-size: 15px;">${entry?.message || '请稍后再试'}</span>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // 有效数据
+      const word = entry.word || queryWord;
+      // 音标: 取第一个 phonetic 或者从 phonetics 中取
+      let phoneticDisplay = entry.phonetic || '';
+      if (!phoneticDisplay && entry.phonetics && entry.phonetics.length > 0) {
+        const firstWithText = entry.phonetics.find(p => p.text);
+        phoneticDisplay = firstWithText ? firstWithText.text : '';
+      }
+      // 检查是否有 audio
+      const hasAudio = entry.phonetics && entry.phonetics.some(p => p.audio);
+      const audioBadge = hasAudio ? '<span class="audio-badge">🎧 音频</span>' : '';
+
+      let html = '';
+
+      // 单词头部
+      html += `<div class="word-head">`;
+      html += `<span class="word">${word}</span>`;
+      if (phoneticDisplay) {
+        html += `<span class="phonetic">${phoneticDisplay} ${audioBadge}</span>`;
+      }
+      // 来源 (origin)
+      if (entry.origin) {
+        html += `<div class="origin">📜 ${entry.origin}</div>`;
+      }
+      html += `</div>`;
+
+      // 含义 (meanings)
+      if (entry.meanings && entry.meanings.length > 0) {
+        entry.meanings.forEach(meaning => {
+          const pos = meaning.partOfSpeech || '词性';
+          const definitions = meaning.definitions || [];
+
+          html += `<div class="meaning-block">`;
+          html += `<div class="part-of-speech"><span>${pos}</span></div>`;
+
+          definitions.forEach(def => {
+            const defText = def.definition || '';
+            const example = def.example || '';
+
+            html += `<div class="definition-item">`;
+            html += `<div class="def-text">${defText}</div>`;
+            if (example) {
+              html += `<div class="example">${example}</div>`;
+            }
+            // synonyms / antonyms 简约不展示
+            html += `</div>`;
+          });
+
+          html += `</div>`;
+        });
+      } else {
+        html += `<div class="meaning-block"><p style="color: #6d7e94;">(无释义)</p></div>`;
+      }
+
+      resultArea.innerHTML = html;
+    }
+
+    // ----- 加载状态 -----
+    function showLoading() {
+      resultArea.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <div>查询中…</div>
+        </div>
+      `;
+    }
+
+    // ----- 主查询流程 -----
+    async function handleSearch() {
+      const query = searchInput.value.trim();
+      if (!query) {
+        resultArea.innerHTML = `
+          <div class="placeholder-message">
+            <span class="emoji-big">📝</span>
+            请输入单词
+          </div>
+        `;
+        return;
+      }
+
+      showLoading();
+
+      const result = await fetchDictionaryData(query);
+      // 如果返回的是数组第一个条目，直接使用；否则可能是错误对象
+      if (result && typeof result === 'object') {
+        renderEntry(result, query);
+      } else {
+        // 兜底
+        renderEntry({ error: 'unknown' }, query);
+      }
+    }
+
+    // ----- 事件绑定 -----
+    searchBtn.addEventListener('click', handleSearch);
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSearch();
+      }
+    });
+
+    // 初始化：加载 hello
+    window.addEventListener('DOMContentLoaded', () => {
+      // 默认搜索 hello
+      handleSearch();
+    });
+
+    // 聚焦选中
+    searchInput.addEventListener('focus', function() {
+      this.select();
+    });
+
+  })();
+</script>
+
+</body>
+</html>
