@@ -201,6 +201,7 @@
       margin-top: 4px;
       font-style: italic;
       border-left: 3px solid #8dabcf;
+      margin-right: 6px;
     }
     .definition-item .example::before {
       content: "“";
@@ -348,45 +349,46 @@
     const searchBtn = document.getElementById('searchBtn');
     const resultArea = document.getElementById('resultArea');
 
-    // ----- 核心 API 请求函数 -----
+    // ----- 新 API 请求函数 (FreeDictionaryAPI) -----
     async function fetchDictionaryData(word) {
       const trimmed = word.trim();
       if (!trimmed) return null;
 
-      const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(trimmed)}`;
+      // 使用英语 (en)，如需其他语言可修改为对应代码或 'all'
+      const url = `https://freedictionaryapi.com/api/v1/entries/en/${encodeURIComponent(trimmed)}`;
       try {
         const response = await fetch(url);
         if (!response.ok) {
-          // 处理 404 等 HTTP 错误
+          // 404 通常表示未找到
           if (response.status === 404) {
             return { error: 'not_found', word: trimmed };
           }
           return { error: 'http_error', status: response.status };
         }
         const data = await response.json();
-        // API 返回数组，取第一个结果 (通常一个词对应一个条目)
-        if (Array.isArray(data) && data.length > 0) {
-          return data[0];
+        // 新 API 返回根对象包含 word 和 entries 数组
+        if (data && data.entries && data.entries.length > 0) {
+          return data; // 直接返回整个根对象
         }
-        return { error: 'no_data' };
+        // 若 entries 为空数组，视为未找到
+        return { error: 'not_found', word: trimmed };
       } catch (err) {
-        // 网络错误或其他
         return { error: 'network', message: err.message };
       }
     }
 
-    // ----- 渲染函数 (基于真实 API 返回结构) -----
-    function renderEntry(entry, queryWord) {
-      // 处理错误状态
-      if (!entry || entry.error) {
-        if (entry?.error === 'not_found') {
+    // ----- 渲染函数 (适配新数据结构) -----
+    function renderEntry(apiResponse, queryWord) {
+      // 处理错误
+      if (!apiResponse || apiResponse.error) {
+        if (apiResponse?.error === 'not_found') {
           resultArea.innerHTML = `
             <div class="not-found">
-              <strong>😕 未找到 “${entry.word || queryWord}”</strong>
+              <strong>😕 未找到 “${apiResponse.word || queryWord}”</strong>
               <span style="font-size: 15px;">请检查拼写，或尝试其他单词</span>
             </div>
           `;
-        } else if (entry?.error === 'network') {
+        } else if (apiResponse?.error === 'network') {
           resultArea.innerHTML = `
             <div class="not-found">
               <strong>🌐 网络请求失败</strong>
@@ -397,7 +399,7 @@
           resultArea.innerHTML = `
             <div class="not-found">
               <strong>⚠️ 查询出错</strong>
-              <span style="font-size: 15px;">${entry?.message || '请稍后再试'}</span>
+              <span style="font-size: 15px;">${apiResponse?.message || '请稍后再试'}</span>
             </div>
           `;
         }
@@ -405,16 +407,23 @@
       }
 
       // 有效数据
-      const word = entry.word || queryWord;
-      // 音标: 取第一个 phonetic 或者从 phonetics 中取
-      let phoneticDisplay = entry.phonetic || '';
-      if (!phoneticDisplay && entry.phonetics && entry.phonetics.length > 0) {
-        const firstWithText = entry.phonetics.find(p => p.text);
-        phoneticDisplay = firstWithText ? firstWithText.text : '';
+      const word = apiResponse.word || queryWord;
+      const entries = apiResponse.entries || [];
+
+      // ---- 提取音标（取第一个 entry 中的第一个发音） ----
+      let phoneticDisplay = '';
+      for (const entry of entries) {
+        if (entry.pronunciations && entry.pronunciations.length > 0) {
+          const found = entry.pronunciations.find(p => p.text);
+          if (found) {
+            phoneticDisplay = found.text;
+            break;
+          }
+        }
       }
-      // 检查是否有 audio
-      const hasAudio = entry.phonetics && entry.phonetics.some(p => p.audio);
-      const audioBadge = hasAudio ? '<span class="audio-badge">🎧 音频</span>' : '';
+
+      // 是否有音频（新 API 中未直接提供 audio，可忽略）
+      const audioBadge = ''; // 新 API 无 audio 字段，不显示
 
       let html = '';
 
@@ -424,37 +433,39 @@
       if (phoneticDisplay) {
         html += `<span class="phonetic">${phoneticDisplay} ${audioBadge}</span>`;
       }
-      // 来源 (origin)
-      if (entry.origin) {
-        html += `<div class="origin">📜 ${entry.origin}</div>`;
-      }
+      // 新 API 没有 origin 字段，故不显示
       html += `</div>`;
 
-      // 含义 (meanings)
-      if (entry.meanings && entry.meanings.length > 0) {
-        entry.meanings.forEach(meaning => {
-          const pos = meaning.partOfSpeech || '词性';
-          const definitions = meaning.definitions || [];
+      // 遍历 entries（每个 entry 对应一个词性/词条）
+      entries.forEach(entry => {
+        const partOfSpeech = entry.partOfSpeech || '词性';
+        const senses = entry.senses || [];
 
-          html += `<div class="meaning-block">`;
-          html += `<div class="part-of-speech"><span>${pos}</span></div>`;
+        html += `<div class="meaning-block">`;
+        html += `<div class="part-of-speech"><span>${partOfSpeech}</span></div>`;
 
-          definitions.forEach(def => {
-            const defText = def.definition || '';
-            const example = def.example || '';
+        senses.forEach(sense => {
+          const definition = sense.definition || '';
+          const examples = sense.examples || []; // 数组
 
-            html += `<div class="definition-item">`;
-            html += `<div class="def-text">${defText}</div>`;
-            if (example) {
-              html += `<div class="example">${example}</div>`;
-            }
-            // synonyms / antonyms 简约不展示
-            html += `</div>`;
-          });
-
+          html += `<div class="definition-item">`;
+          html += `<div class="def-text">${definition}</div>`;
+          // 显示所有示例
+          if (examples.length > 0) {
+            examples.forEach(ex => {
+              if (ex) {
+                html += `<div class="example">${ex}</div>`;
+              }
+            });
+          }
           html += `</div>`;
         });
-      } else {
+
+        html += `</div>`;
+      });
+
+      // 如果没有任何内容，显示提示
+      if (entries.length === 0) {
         html += `<div class="meaning-block"><p style="color: #6d7e94;">(无释义)</p></div>`;
       }
 
@@ -487,13 +498,7 @@
       showLoading();
 
       const result = await fetchDictionaryData(query);
-      // 如果返回的是数组第一个条目，直接使用；否则可能是错误对象
-      if (result && typeof result === 'object') {
-        renderEntry(result, query);
-      } else {
-        // 兜底
-        renderEntry({ error: 'unknown' }, query);
-      }
+      renderEntry(result, query);
     }
 
     // ----- 事件绑定 -----
@@ -508,7 +513,6 @@
 
     // 初始化：加载 hello
     window.addEventListener('DOMContentLoaded', () => {
-      // 默认搜索 hello
       handleSearch();
     });
 
